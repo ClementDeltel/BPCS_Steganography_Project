@@ -1,5 +1,6 @@
-
-function image = bcps_algorithm(vessel, t)
+%Input: vessel image data and text
+%Output: image with text inside applying bpcs algorithm
+function image = bpcs_algorithm(vessel, t)
    
    vesselcgc = pbc_to_cgc(vessel);
    vesselbp = image_to_bitplane(vesselcgc);
