@@ -40,8 +40,11 @@ function complexity = get_complexity(BP)
             columns_changes = columns_changes + sum((BP(i-1,j) ~= BP(i,j)));
         end
     end
-    
-    total_changes = rows_changes + columns_changes
+    rows_changes + columns_changes
+    max_pos_changes
+    rows
+    columns
+    total_changes = rows_changes + columns_changes;
     if (max_pos_changes > 0)
         complexity = total_changes/max_pos_changes;
     end

@@ -15,14 +15,14 @@ function [B,conj_map] = group_text_into_block(t)
     for i=1:n_bloq
         if i < n_bloq
             B1 = charMatrix(8*(i-1)+1:8*i);
-            if (get_complexity(dec2bin(B1)) < alpha)
+            if (get_complexity(dec2bin(B1,8)) < alpha)
                 conj_map = [conj_map i];
                 conjugate(B1);
             end
             B(i,:)= B1;
         else
             B1 = charMatrix(8*(i-1)+1:end);
-            if (get_complexity(dec2bin(B1)) < alpha)
+            if (get_complexity(dec2bin(B1,8)) < alpha)
                 conj_map = [conj_map i];
                 conjugate(B1);
             end
