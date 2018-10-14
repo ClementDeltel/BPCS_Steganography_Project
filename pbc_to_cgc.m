@@ -1,7 +1,7 @@
 % Transform the matrix received as argument from PBC system
 % to CGC system
 % Input: b is a PBC matrix composed by numbers of 8 bits [0, 255]
-% Output: g is a CGC matrix 
+% Output: g is a CGC matrix composed by numbers of 8 bits [0,255]
 %
 % PBC = [b8 b7 b6 b5 b4 b3 b2 b1]
 % CGC = [g8 g7 g6 g5 g4 g3 g2 g1]
