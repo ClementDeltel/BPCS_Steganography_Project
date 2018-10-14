@@ -13,9 +13,9 @@ function [noise,informative] = segmentation(BP,alpha)
     informative = [];
     num_bp = 8;
     
-    for i=1:8
+    for i=1:num_bp
         %complexity = [complexity get_complexity(BP(:,:,i))];
-        if (get_complexity(BP(i,:,:))] <= alpha)
+        if (get_complexity(BP(i,:,:)) <= alpha)
             noise = [noise i];
         else
             informative = [informative i];
