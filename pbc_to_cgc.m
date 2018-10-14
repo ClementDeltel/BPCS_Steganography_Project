@@ -11,13 +11,5 @@
 % gi = bi xor b(i+1)
 
 function g = pbc_to_cgc(b)
-%[rows,columns] = size(b);
-%g = zeros(rows, columns);
-%g(:,1)=b(:,1);
-%   for j=2:columns
-%       g(:,j)=xor(b(:,j-1),b(:,j));
-%   end
-    
-   
    g = bitxor(b,(bitor(bitshift(b,-1),bitand(128,b))));
 end
