@@ -11,6 +11,6 @@ function BP = image_to_bitplane(image)
     BP = zeros(num_bp,rows,columns);
     
     for i=1:num_bp
-        BP(i,:,:) = bitget(image,i);bitand(image,2.^(i-1));
+        BP(i,:,:) = bitget(image,i);
     end
 end
