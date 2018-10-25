@@ -5,9 +5,8 @@
 %        2.1) If it is NOT complex, make it complex by conjugating it
 %             and make a note of it
 %B = Array of blocks
-    %B1 = first BLOCK_SIZE characters [c1 c2 ... c8] Here BLOCK_SIZE = 8
-    %B2 = second BLOCK_SIZE characters [c9 ... c16]
-    %BN = N BLOCK_SIZE characters [ci ... cn]
+    %B1 = first 8 characters [c1 c2 ... c8]
+    %B2 = second 8 characters [c9 ... c16]
 function [B,conj_map] = group_text_into_block(t, alpha, block_size)
     switch nargin
     case 1
@@ -16,6 +15,7 @@ function [B,conj_map] = group_text_into_block(t, alpha, block_size)
     case 2
         block_size = 8;
     end
+
 
     charMatrix=uint8(char(t));
     [rows, n_char] = size(charMatrix);
@@ -28,15 +28,15 @@ function [B,conj_map] = group_text_into_block(t, alpha, block_size)
         if i < n_bloq
             B1 = charMatrix(8*(i-1)+1:8*i);
             if (get_complexity(dec2bin(B1,8)) < alpha)
-                B1 = conjugate(B1);
                 conj_map = [conj_map i];
+                conjugate(B1);
             end
             B(i,:)= B1;
         else
             B1 = charMatrix(8*(i-1)+1:end);
             if (get_complexity(dec2bin(B1,8)) < alpha)
-                B1 = conjugate(B1);
                 conj_map = [conj_map i];
+                conjugate(B1);
             end
             B(i,:)= [B1 zeros(1, 8-length(charMatrix(8*(i-1)+1:end)))];
             
