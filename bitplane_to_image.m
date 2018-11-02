@@ -8,6 +8,6 @@ function image = bitplane_to_image(BP)
     image = zeros(rows,columns);
     
     for i=1:num_bp
-        image(:,:) = image(:,:) + reshape(BP(i,:,:),rows,columns)*2^(i-1);
+        image(:,:) = image(:,:) + reshape(BP(num_bp-i+1,:,:),rows,columns)*2^(i-1);
     end
 end
