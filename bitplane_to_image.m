@@ -1,8 +1,8 @@
-%This fuctions return the 8 bitplane of the image received as input
-%Input: Image - Array(2D)
-%Output: 8BP x length(Image)
-%   BP = B1 ... B8
-%Bitplane = B8 B7 B6 B5 B4 B3 B2 B1
+%This fuctions return the image from the i bitplane of n x m values
+%Input: iBP x length(n x m)
+%Bitplane = B1 B2 B3 ... Bi
+%Output: Image - Array(n x m)
+
 function image = bitplane_to_image(BP)
     [num_bp rows columns] = size(BP);
     image = zeros(rows,columns);
