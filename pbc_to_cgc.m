@@ -11,5 +11,5 @@
 % gi = bi xor b(i+1)
 
 function g = pbc_to_cgc(b)
-   g = bitxor(b,(bitor(bitshift(b,-1),bitand(128,b))));
+   g = bitxor(b,(bitor(bitshift(b,-1),bitand(2^7,b))));
 end

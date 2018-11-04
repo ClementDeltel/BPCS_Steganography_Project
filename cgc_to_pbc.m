@@ -19,7 +19,7 @@ function b = cgc_to_pbc(g)
 %    for j=2:columns
 %        b(:,j)=xor(g(:,j),b(:,j-1));
 %    end
-    b = bitand(128,g);    
+    b = bitand(2^7,g);    
     for i=7:-1:1
         b = bitor(b,bitxor(bitand(g,2.^(i-1)),bitshift(bitand(b,2.^i),-1)));
     end
