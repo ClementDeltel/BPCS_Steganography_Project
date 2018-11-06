@@ -15,6 +15,7 @@
 function b = cgc_to_pbc_16(g)
     b = bitand(2^15,g);    
     for i=15:-1:1
+        %b = bitor(int16(b),bitxor(bitand(int16(g),int16(2.^(i-1)),'int16'),bitshift(bitand(int16(b),int16(2.^i),'int16'),int16(-1),'int16'),'int16'),'int16');
         b = bitor(b,bitxor(bitand(g,2.^(i-1)),bitshift(bitand(b,2.^i),-1)));
     end
 end

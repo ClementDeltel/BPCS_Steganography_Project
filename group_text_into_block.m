@@ -17,12 +17,14 @@ function [B,conj_map] = group_text_into_block(t, alpha, block_size)
         block_size = 8;
     end
 
-    charMatrix=uint8(char(t));
-    [rows, n_char] = size(charMatrix);
+    charMatrix=int16(char(t));
+    [~, n_char] = size(charMatrix);
     n_bloq = ceil(n_char/block_size);
     B = zeros(n_bloq,block_size);
     
     conj_map = [];
+    
+    %Add "END" character at the end
     
     for i=1:n_bloq
         if i < n_bloq
