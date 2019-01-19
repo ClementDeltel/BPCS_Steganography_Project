@@ -1,6 +1,6 @@
-##BPCS-Stegnography
+## BPCS-Stegnography
 
-###Bit-Plane Complexity Segmentation Steganography
+### Bit-Plane Complexity Segmentation Steganography
 
 Abstract:
 
