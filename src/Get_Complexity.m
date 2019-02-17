@@ -1,32 +1,32 @@
-function complexity = Get_Complexity(Bitplane)
-    [rows,columns] = size(Bitplane);
+function complexity = Get_Complexity(bitplane)
+    [rows,columns] = size(bitplane);
     % Max. possible changes in the bitplane
     if (rows == 1)
-        max_pos_changes = columns - 1;
+        maxPosChanges = columns - 1;
     elseif (columns == 1)
-        max_pos_changes = rows - 1;
+        maxPosChanges = rows - 1;
     else
-      max_pos_changes = (rows-1)*columns+rows*(columns-1);
+      maxPosChanges = (rows-1)*columns+rows*(columns-1);
     end
 
-    rows_changes = 0;
+    rowsChanges = 0;
     for i= 1:rows
         for j= 2:columns
-            rows_changes = rows_changes + sum((Bitplane(i,j-1) ~= Bitplane(i,j)));
+            rowsChanges = rowsChanges + sum((bitplane(i,j-1) ~= bitplane(i,j)));
         end
     end
 
-    columns_changes = 0;
+    columnsChanges = 0;
     for j= 1:columns
         for i= 2:rows
-            columns_changes = columns_changes + sum((Bitplane(i-1,j) ~= Bitplane(i,j)));
+            columnsChanges = columnsChanges + sum((bitplane(i-1,j) ~= bitplane(i,j)));
         end
     end
     % Total changes and complexity
-    total_changes = rows_changes + columns_changes;
-    if (max_pos_changes > 0)
+    totalChanges = rowsChanges + columnsChanges;
+    if (maxPosChanges > 0)
          % This type of complexity is called alpha
-         alpha = total_changes/max_pos_changes;
+         alpha = totalChanges/maxPosChanges;
     end
 
     complexity = alpha;
