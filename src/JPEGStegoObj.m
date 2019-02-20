@@ -241,8 +241,8 @@ classdef JPEGStegoObj < handle
         % Embedding algorithms
         %==================================================================
         function Apply_BPCS(JPEGImage, SecretData)
-            Init_Image(JPEGImage);
-            Get_Payload_Capacity_BPCS(JPEGImage);
+ %           Init_Image(JPEGImage);
+ %           Get_Payload_Capacity_BPCS(JPEGImage);
             
             %----------------------------------
             % Embedding process
@@ -275,8 +275,8 @@ classdef JPEGStegoObj < handle
 %         end
         
         function Apply_LSB(JPEGImage, SecretData)
-            Init_Image(JPEGImage);
-            Get_Payload_Capacity_LSB(JPEGImage);
+%            Init_Image(JPEGImage);
+%            Get_Payload_Capacity_LSB(JPEGImage);
             
             %----------------------------------
             % Embedding process
