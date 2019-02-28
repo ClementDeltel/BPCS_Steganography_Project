@@ -1,4 +1,6 @@
-function complexity = Get_Complexity(bitplane)
+function [alpha,complexity] = Get_Complexity(bitplane)
+
+    % Length of the black-and-white border
     [rows,columns] = size(bitplane);
     % Max. possible changes in the bitplane
     if (rows == 1)
@@ -29,5 +31,14 @@ function complexity = Get_Complexity(bitplane)
          alpha = totalChanges/maxPosChanges;
     end
 
-    complexity = alpha;
+    %Document on the Google Drive to fill the next sections: Uncompressed Image Steganography using BPCS: Survey and Analysis
+
+    % Run-length irregularity
+    beta = 0;
+
+    % Border Noisiness
+    gamma = 0;
+
+    % Final complexity - how to combine those values ?
+    complexity = alpha + beta + gamma;
 end
