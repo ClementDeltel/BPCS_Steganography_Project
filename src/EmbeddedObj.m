@@ -14,6 +14,8 @@ classdef EmbeddedObj < handle
         
         % Conjugation related fields
         thresholdAlpha = 0.5;
+        complexityTab
+        complexityTabConj
         countConjugationDecimal
         countConjugationBlock
         positionsDecimalTab
@@ -50,6 +52,8 @@ classdef EmbeddedObj < handle
         % Text to Bitstream and vice versa
         %==================================================================
         function Text_to_Bitstream(EmbeddedData)
+            % Remove undesirables char
+            EmbeddedData.text = regexprep(EmbeddedData.text, '‘|’|“|”|‹|›|«|»|?|?|„|"|''', ' ');
             % Binary conversion
             bin = dec2bin(EmbeddedData.text,8);
             % The output bitstream is a string
@@ -152,18 +156,19 @@ classdef EmbeddedObj < handle
             X = toeplitz(mod(1:8,2));
             Wc = bitxor(X(1:7,:),ones(7,8));
             
-            complexityTab= zeros(1,EmbeddedData.countDecimal);
+            EmbeddedData.complexityTab= zeros(1,EmbeddedData.countDecimal);
             % For loop to retrieve the complexity of all blocks
             for index= 1:EmbeddedData.countDecimal
-                complexityTab(1,index)= Get_Complexity(EmbeddedData.blocks(:,:,index));
+                EmbeddedData.complexityTab(1,index)= Get_Complexity(EmbeddedData.blocks(:,:,index));
             end
+            EmbeddedData.complexityTabConj = EmbeddedData.complexityTab;
             % For loop to conjugate the blocks if necessary
             for index= 1:EmbeddedData.countDecimal
-                if (complexityTab(1,index) <= EmbeddedData.thresholdAlpha)
+                if (EmbeddedData.complexityTabConj(1,index) <= EmbeddedData.thresholdAlpha)
                     % Conjugation of the block
                     EmbeddedData.blocks(:,:,index) = bitxor(Wc,EmbeddedData.blocks(:,:,index));
                     % Update the complexity of the block
-                    complexityTab(1,index)= Get_Complexity(EmbeddedData.blocks(:,:,index));
+                    EmbeddedData.complexityTabConj(1,index)= Get_Complexity(EmbeddedData.blocks(:,:,index));
                     % Increment the count of conjugated blocks
                     EmbeddedData.countConjugationDecimal = EmbeddedData.countConjugationDecimal+1;
                     % Save the position of the conjugated block in the appropiate tab
@@ -252,6 +257,17 @@ classdef EmbeddedObj < handle
             % Retrieve the text message
             Blocks_to_Bitstream(EmbeddedData);
             Bitstream_to_Text(EmbeddedData);
+        end
+        
+        %==================================================================
+        % Steganalysis
+        %==================================================================
+        function Complexity_Histogram(EmbeddedData)
+            figure;
+            subplot(121);
+            histogram(EmbeddedData.complexityTab, 'BinLimits', [0,1]);
+            subplot(122);
+            histogram(EmbeddedData.complexityTabConj, 'BinLimits', [0,1]);
         end
     end
 end

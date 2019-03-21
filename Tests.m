@@ -110,7 +110,7 @@ c = str2num(a);
 
 %%
 
-Data = Embedded_Obj('hello.txt');
+Data = EmbeddedObj('hello.txt');
 Text_to_Bitstream(Data);
 
 Bitstream_to_Blocks(Data);
@@ -135,3 +135,53 @@ subplot(132);
 imshow(Wc);
 subplot(133);
 imshow(P_star);
+
+%% Complex or Informative area
+
+inf = [0,0,0,0,0,0,0,0;
+       0,0,0,0,0,0,0,0;
+       0,0,0,1,0,0,0,0;
+       0,0,1,1,0,0,0,0;
+       0,0,1,1,1,1,0,0;
+       0,0,1,1,1,0,0,0;
+       0,1,1,1,1,1,0,0;
+       0,0,0,0,0,0,0,0];      
+
+cplx = [0,1,0,1,0,1,1,0;
+       0,1,1,0,0,0,1,0;
+       1,1,0,1,0,1,0,1;
+       0,1,1,0,0,0,0,1;
+       1,0,1,0,1,0,0,0;
+       0,0,0,0,1,0,0,1;
+       1,1,0,0,0,0,1,0;
+       0,0,0,0,0,1,1,1];
+
+figure;
+subplot(121);
+imshow(inf);
+subplot(122);
+imshow(cplx);
+
+%% Complexity Histogram image
+
+jpeg = JPEGStegoObj('house-pbc.jpg');
+Init_Image(jpeg);
+Get_Payload_Capacity_BPCS(jpeg);
+Complexity_Histogram(jpeg);
+
+%% Complexity Histogram secret file
+
+text = EmbeddedObj('long_text.txt');
+Data_to_Blockstream(text);
+Complexity_Histogram(text);
+
+%% Test regexp
+
+txt = 'dsnnss'' dfejhbv'' et s‹‹inen " fjk««brkbns"';
+res = regexprep(txt, '‘|’|“|”|‹|›|«|»|?|?|„|"|''', ' ');
+
+l1 = length(txt);
+l2 = length(res);
+
+%%
+text = EmbeddedObj('long_text.txt');

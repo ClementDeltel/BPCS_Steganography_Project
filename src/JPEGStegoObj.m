@@ -23,16 +23,28 @@ classdef JPEGStegoObj < handle
         % BPCS - Complexity Process
         thresholdAlpha = 0.5;
         noiseAreas
+        complexityTab
         countNoiseAreas = 0;
+        countNoiseAreasInBytes = 0;
         payloadCapacityBPCS = 0;
         
         % Advanced BPCS
+%         thresholdBeta = 0;
+%         thresholdGamma = 0;
         payloadCapacityAdvancedBPCS = 0;
         
         % LSB
         LSBAreas
         countLSBAreas = 0;
+        countLSBAreasInBytes = 0;
         payloadCapacityLSB = 0;
+        
+        % Steganalysis
+        Peak_SNR = 0;
+        SNR = 0;
+        MSE = 0;
+        SSIMVal = 0;
+        SSIMMap
         
     end
     
@@ -189,25 +201,30 @@ classdef JPEGStegoObj < handle
         
         function Get_Payload_Capacity_BPCS(JPEGImage)
             % Complexity process (identification of noise areas)
-%             complexity_tab= [];
             JPEGImage.noiseAreas = [];
+            JPEGImage.complexityTab = [];
+            count = 0;
             for channel= 1:3
                 for i= 1:JPEGImage.blockRows
                     for j= 1:JPEGImage.blockColumns
-                        for bitplane= JPEGImage.nbBitplanes:-1:1
+                        for bitplane= JPEGImage.nbBitplanes:-1:8
                             complexity = Get_Complexity(squeeze(JPEGImage.bitplanes(channel, i, j, :, :, bitplane)));
-%                             complexity_tab = [complexity_tab complexity];
+                            JPEGImage.complexityTab = [JPEGImage.complexityTab complexity];
                             % If the bitplane is a noise area, we store its position
                             if (complexity >= JPEGImage.thresholdAlpha)
                                 JPEGImage.noiseAreas = [JPEGImage.noiseAreas [channel i j bitplane]'];
-                                break
+                                count = count +1;
+                                if (count >= 1)
+                                    count = 0;
+                                    break
+                                end
                             end
                         end
                     end
                 end
             end
-%             histogram(complexity_tab);
             JPEGImage.countNoiseAreas = size(JPEGImage.noiseAreas,2);
+            JPEGImage.countNoiseAreasInBytes = 7/2 * JPEGImage.countNoiseAreas;
             JPEGImage.payloadCapacityBPCS = JPEGImage.countNoiseAreas / (3 * JPEGImage.blockRows * JPEGImage.blockColumns * JPEGImage.nbBitplanes);
         end
         
@@ -225,6 +242,7 @@ classdef JPEGStegoObj < handle
                 end
             end
             JPEGImage.countLSBAreas = size(JPEGImage.LSBAreas,2);
+            JPEGImage.countLSBAreasInBytes = 7/2 * JPEGImage.countLSBAreas;
             JPEGImage.payloadCapacityLSB = JPEGImage.countLSBAreas / (3 * JPEGImage.blockRows * JPEGImage.blockColumns * JPEGImage.nbBitplanes);
         end
         
@@ -241,8 +259,8 @@ classdef JPEGStegoObj < handle
         % Embedding algorithms
         %==================================================================
         function Apply_BPCS(JPEGImage, SecretData)
- %           Init_Image(JPEGImage);
- %           Get_Payload_Capacity_BPCS(JPEGImage);
+            Init_Image(JPEGImage);
+            Get_Payload_Capacity_BPCS(JPEGImage);
             
             %----------------------------------
             % Embedding process
@@ -269,14 +287,21 @@ classdef JPEGStegoObj < handle
             % JPEG Writing
             JPEGImage.readData.coef_arrays = JPEGImage.DCTcoefficients;
             jpeg_write(JPEGImage.readData,strcat(JPEGImage.name,'-embedded-BPCS.jpg'));
+            
+            % PSNR
+            PSNR_Result(JPEGImage, strcat(JPEGImage.name,'.jpg'), strcat(JPEGImage.name,'-embedded-BPCS.jpg'));
+            % MSE
+            MSE_Result(JPEGImage, strcat(JPEGImage.name,'.jpg'), strcat(JPEGImage.name,'-embedded-BPCS.jpg'));
+            % SSIM
+            SSIM_Result(JPEGImage, strcat(JPEGImage.name,'.jpg'), strcat(JPEGImage.name,'-embedded-BPCS.jpg'));
         end
         
 %         function Apply_Advanced_BPCS(JPEGImage, SecretData)
 %         end
         
         function Apply_LSB(JPEGImage, SecretData)
-%            Init_Image(JPEGImage);
-%            Get_Payload_Capacity_LSB(JPEGImage);
+            Init_Image(JPEGImage);
+            Get_Payload_Capacity_LSB(JPEGImage);
             
             %----------------------------------
             % Embedding process
@@ -299,6 +324,13 @@ classdef JPEGStegoObj < handle
             % JPEG Writing
             JPEGImage.readData.coef_arrays = JPEGImage.DCTcoefficients;
             jpeg_write(JPEGImage.readData,strcat(JPEGImage.name,'-embedded-LSB.jpg'));
+            
+            % PSNR
+            PSNR_Result(JPEGImage, strcat(JPEGImage.name,'.jpg'), strcat(JPEGImage.name,'-embedded-LSB.jpg'));
+            % MSE
+            MSE_Result(JPEGImage, strcat(JPEGImage.name,'.jpg'), strcat(JPEGImage.name,'-embedded-LSB.jpg'));
+            % SSIM
+            SSIM_Result(JPEGImage, strcat(JPEGImage.name,'.jpg'), strcat(JPEGImage.name,'-embedded-LSB.jpg'));
         end
         
         %==================================================================
@@ -334,5 +366,30 @@ classdef JPEGStegoObj < handle
             
             Block_Stream_to_Data(EmbeddedData);
         end
+        
+        %==================================================================
+        % Steganalysis
+        %==================================================================        
+        function Complexity_Histogram(JPEGImage)
+            histogram(JPEGImage.complexityTab, 'BinLimits', [0,1]);
+        end
+        
+        function PSNR_Result(JPEGImage, imageStart, imageEnd)
+            ref = imread(imageStart);
+            A = imread(imageEnd);
+            [JPEGImage.Peak_SNR, JPEGImage.SNR] = psnr(A, ref);
+        end
+        
+        function MSE_Result(JPEGImage, imageStart, imageEnd)
+            ref = imread(imageStart);
+            A = imread(imageEnd);
+            JPEGImage.MSE = immse(A, ref);
+        end
+        
+        function SSIM_Result(JPEGImage, imageStart, imageEnd)
+            ref = imread(imageStart);
+            A = imread(imageEnd);
+            [JPEGImage.SSIMVal, JPEGImage.SSIMMap] = ssim(A, ref);
+        end          
     end
 end
