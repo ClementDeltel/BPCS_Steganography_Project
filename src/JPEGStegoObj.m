@@ -371,6 +371,7 @@ classdef JPEGStegoObj < handle
         % Steganalysis
         %==================================================================        
         function Complexity_Histogram(JPEGImage)
+            figure('Name','Histogram')
             histogram(JPEGImage.complexityTab, 'BinLimits', [0,1]);
         end
         
