@@ -73,7 +73,7 @@ classdef JPEGStegoObj < handle
                 % Blocks matrix initialization
                 JPEGImage.blockRows =        size(JPEGImage.DCTcoefficients{1},1)/8;
                 JPEGImage.blockColumns =     size(JPEGImage.DCTcoefficients{1},2)/8;
-                JPEGImage.blocks = zeros(3, JPEGImage.blockRows, JPEGImage.blockColumns, 8, 8);
+                JPEGImage.blocks = zeros(1, JPEGImage.blockRows, JPEGImage.blockColumns, 8, 8);
             end
         end
         
@@ -81,21 +81,17 @@ classdef JPEGStegoObj < handle
         % DCT Coefficients to Blocks and vice versa
         %==================================================================
         function DCT_Coeff_to_Blocks(JPEGImage)
-            % Y Channel
-            JPEGImage.blocks(1,:, :, :, :) = permute(reshape(JPEGImage.DCTcoefficients{1}, 1, 8, JPEGImage.blockRows, 8, JPEGImage.blockColumns),[1 3 5 2 4]);
-            % Cb Channel
-            JPEGImage.blocks(2,:, :, :, :) = permute(reshape(JPEGImage.DCTcoefficients{2}, 1, 8, JPEGImage.blockRows, 8, JPEGImage.blockColumns),[1 3 5 2 4]);
-            % Cr Channel
-            JPEGImage.blocks(3,:, :, :, :) = permute(reshape(JPEGImage.DCTcoefficients{3}, 1, 8, JPEGImage.blockRows, 8, JPEGImage.blockColumns),[1 3 5 2 4]);
+            for channel= 1
+                % Y Channel only
+                JPEGImage.blocks(channel,:, :, :, :) = permute(reshape(JPEGImage.DCTcoefficients{channel}, 1, 8, JPEGImage.blockRows, 8, JPEGImage.blockColumns),[1 3 5 2 4]);
+            end
         end
         
         function Blocks_to_DCT_Coeff(JPEGImage)
-            % Y Channel
-            JPEGImage.DCTcoefficients{1} = reshape(permute(JPEGImage.blocks(1,:,:,:,:),[1 4 2 5 3]),size(JPEGImage.DCTcoefficients{1}));
-            % Cb Channel
-            JPEGImage.DCTcoefficients{2} = reshape(permute(JPEGImage.blocks(2,:,:,:,:),[1 4 2 5 3]),size(JPEGImage.DCTcoefficients{1}));
-            % Cr Channel
-            JPEGImage.DCTcoefficients{3} = reshape(permute(JPEGImage.blocks(3,:,:,:,:),[1 4 2 5 3]),size(JPEGImage.DCTcoefficients{1}));
+            for channel= 1
+                % Y Channel only
+                JPEGImage.DCTcoefficients{channel} = reshape(permute(JPEGImage.blocks(channel,:,:,:,:),[1 4 2 5 3]),size(JPEGImage.DCTcoefficients{channel}));
+            end
         end
         
         %==================================================================
@@ -103,37 +99,30 @@ classdef JPEGStegoObj < handle
         %==================================================================
         function Blocks_to_Bitplanes(JPEGImage)
             % How many bitplanes do we need?
-            JPEGImage.bitplanes = zeros(3, JPEGImage.blockRows, JPEGImage.blockColumns, 8, 8, JPEGImage.nbBitplanes);
-            pow=[8 16];
-            for p = pow
-                % Find the max value in the DCTcoefficients
-                if max(abs(JPEGImage.DCTcoefficients{1}(:))) > 2^p
-                    JPEGImage.nbBitplanes = p*2;
-                    JPEGImage.coeffType = 'int16';
-                end
+            JPEGImage.bitplanes = zeros(1, JPEGImage.blockRows, JPEGImage.blockColumns, 8, 8, JPEGImage.nbBitplanes);
+            % Find the max value in the DCTcoefficients
+            if max(abs(JPEGImage.DCTcoefficients{1}(:))) > 2^7
+                JPEGImage.nbBitplanes = 16;
+                JPEGImage.coeffType = 'int16';
             end
             
             % The loop is used to build the bitplanes
             for bitplane=1:JPEGImage.nbBitplanes
-                % Y Channel
-                JPEGImage.bitplanes(1, :, :, :, :, bitplane) = bitget(JPEGImage.blocks(1, :, :, :, :), JPEGImage.nbBitplanes-bitplane+1, JPEGImage.coeffType);
-                % Cb Channel
-                JPEGImage.bitplanes(2, :, :, :, :, bitplane) = bitget(JPEGImage.blocks(2, :, :, :, :), JPEGImage.nbBitplanes-bitplane+1, JPEGImage.coeffType);
-                % Cr Channel
-                JPEGImage.bitplanes(3, :, :, :, :, bitplane) = bitget(JPEGImage.blocks(3, :, :, :, :), JPEGImage.nbBitplanes-bitplane+1, JPEGImage.coeffType);
+                for channel= 1
+                    % Y Channel only
+                    JPEGImage.bitplanes(channel, :, :, :, :, bitplane) = bitget(JPEGImage.blocks(channel, :, :, :, :), JPEGImage.nbBitplanes-bitplane+1, JPEGImage.coeffType);
+                end
             end
         end
         
         function Bitplanes_to_Blocks(JPEGImage)
             % Blocks matrix initialization
-            JPEGImage.blocks = zeros(3, JPEGImage.blockRows, JPEGImage.blockColumns, 8, 8);
+            JPEGImage.blocks = zeros(1, JPEGImage.blockRows, JPEGImage.blockColumns, 8, 8);
             for bitplane= 1:JPEGImage.nbBitplanes
-                % Y Chanel
-                JPEGImage.blocks(1, :, :, :, :) = JPEGImage.blocks(1, :, :, :, :) + bitshift(JPEGImage.bitplanes(1, :, :, :, :, bitplane), JPEGImage.nbBitplanes-bitplane);
-                % Cb Channel
-                JPEGImage.blocks(2, :, :, :, :) = JPEGImage.blocks(2, :, :, :, :) + bitshift(JPEGImage.bitplanes(2, :, :, :, :, bitplane), JPEGImage.nbBitplanes-bitplane);
-                % Cr Channel
-                JPEGImage.blocks(3, :, :, :, :) = JPEGImage.blocks(3, :, :, :, :) + bitshift(JPEGImage.bitplanes(3, :, :, :, :, bitplane), JPEGImage.nbBitplanes-bitplane);
+                for channel= 1
+                    % Y Chanel only
+                    JPEGImage.blocks(channel, :, :, :, :) = JPEGImage.blocks(channel, :, :, :, :) + bitshift(JPEGImage.bitplanes(channel, :, :, :, :, bitplane), JPEGImage.nbBitplanes-bitplane);
+                end
             end
             JPEGImage.blocks(JPEGImage.blocks > 2^(JPEGImage.nbBitplanes-1)-1) = JPEGImage.blocks(JPEGImage.blocks > 2^(JPEGImage.nbBitplanes-1)-1) - 2^JPEGImage.nbBitplanes;
         end
@@ -204,10 +193,10 @@ classdef JPEGStegoObj < handle
             JPEGImage.noiseAreas = [];
             JPEGImage.complexityTab = [];
             count = 0;
-            for channel= 1:3
+            for channel= 1:1
                 for i= 1:JPEGImage.blockRows
                     for j= 1:JPEGImage.blockColumns
-                        for bitplane= JPEGImage.nbBitplanes:-1:8
+                        for bitplane= JPEGImage.nbBitplanes:-1:11
                             complexity = Get_Complexity(squeeze(JPEGImage.bitplanes(channel, i, j, :, :, bitplane)));
                             JPEGImage.complexityTab = [JPEGImage.complexityTab complexity];
                             % If the bitplane is a noise area, we store its position
@@ -225,7 +214,8 @@ classdef JPEGStegoObj < handle
             end
             JPEGImage.countNoiseAreas = size(JPEGImage.noiseAreas,2);
             JPEGImage.countNoiseAreasInBytes = 7/2 * JPEGImage.countNoiseAreas;
-            JPEGImage.payloadCapacityBPCS = JPEGImage.countNoiseAreas / (3 * JPEGImage.blockRows * JPEGImage.blockColumns * JPEGImage.nbBitplanes);
+            % Multiply by 3 the denominator if you want to use the 3 channels to hide data
+            JPEGImage.payloadCapacityBPCS = JPEGImage.countNoiseAreas / (JPEGImage.blockRows * JPEGImage.blockColumns * JPEGImage.nbBitplanes);
         end
         
 %         function Get_Payload_Capacity_Advanced_BPCS(JPEGImage)
@@ -234,7 +224,7 @@ classdef JPEGStegoObj < handle
         function Get_Payload_Capacity_LSB(JPEGImage)
             
             JPEGImage.LSBAreas = [];
-            for channel= 1:3
+            for channel= 1
                 for i= 1:JPEGImage.blockRows
                     for j= 1:JPEGImage.blockColumns
                         JPEGImage.LSBAreas = [JPEGImage.LSBAreas [channel i j 16]'];
@@ -243,7 +233,8 @@ classdef JPEGStegoObj < handle
             end
             JPEGImage.countLSBAreas = size(JPEGImage.LSBAreas,2);
             JPEGImage.countLSBAreasInBytes = 7/2 * JPEGImage.countLSBAreas;
-            JPEGImage.payloadCapacityLSB = JPEGImage.countLSBAreas / (3 * JPEGImage.blockRows * JPEGImage.blockColumns * JPEGImage.nbBitplanes);
+            % Multiply by 3  the denominator if you want to use the 3 channels to hide data
+            JPEGImage.payloadCapacityLSB = JPEGImage.countLSBAreas / (JPEGImage.blockRows * JPEGImage.blockColumns * JPEGImage.nbBitplanes);
         end
         
         %==================================================================
@@ -260,6 +251,7 @@ classdef JPEGStegoObj < handle
         %==================================================================
         function Apply_BPCS(JPEGImage, SecretData)
             Init_Image(JPEGImage);
+%             test1 = max(abs(JPEGImage.DCTcoefficients{1}(:)));
             Get_Payload_Capacity_BPCS(JPEGImage);
             
             %----------------------------------
@@ -275,11 +267,12 @@ classdef JPEGStegoObj < handle
             
             % Blocks rebuilding
             Bitplanes_to_Blocks(JPEGImage);
-%             test1 = JPEG_Image.DCTcoefficients{1};
+%             test2 = JPEG_Image.DCTcoefficients{1};
             
             % DCT Coefficients rebuilding
             Blocks_to_DCT_Coeff(JPEGImage);
-%             test2 = JPEG_Image.DCTcoefficients{1};
+%             test3 = JPEG_Image.DCTcoefficients{1};
+%             test4 = max(abs(JPEGImage.DCTcoefficients{1}(:)));
             
             % CGC to PBC conversion
 %             CGC_to_PBC(JPEG_Image);
@@ -300,8 +293,8 @@ classdef JPEGStegoObj < handle
 %         end
         
         function Apply_LSB(JPEGImage, SecretData)
-            Init_Image(JPEGImage);
-            Get_Payload_Capacity_LSB(JPEGImage);
+%             Init_Image(JPEGImage);
+%             Get_Payload_Capacity_LSB(JPEGImage);
             
             %----------------------------------
             % Embedding process
@@ -315,11 +308,9 @@ classdef JPEGStegoObj < handle
             
             % Blocks rebuilding
             Bitplanes_to_Blocks(JPEGImage);
-%             test1 = JPEG_Image.DCTcoefficients{1};
             
             % DCT Coefficients rebuilding
             Blocks_to_DCT_Coeff(JPEGImage);
-%             test2 = JPEG_Image.DCTcoefficients{1};
             
             % JPEG Writing
             JPEGImage.readData.coef_arrays = JPEGImage.DCTcoefficients;
