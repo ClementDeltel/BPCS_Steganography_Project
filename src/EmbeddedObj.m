@@ -53,26 +53,29 @@ classdef EmbeddedObj < handle
         %==================================================================
         function Text_to_Bitstream(EmbeddedData)
             % Remove undesirables char
-            EmbeddedData.text = regexprep(EmbeddedData.text, '‘|’|“|”|‹|›|«|»|?|?|„|"|''', ' ');
-            % Binary conversion
+            EmbeddedData.text = regexprep(EmbeddedData.text, 'â€˜|â€™|â€œ|â€|â€¹|â€º|Â«|Â»|?|?|â€ž|"|''', ' ');
+            % Binary conversion, each character on 8 bits
             bin = dec2bin(EmbeddedData.text,8);
             % The output bitstream is a string
             EmbeddedData.bitstream = reshape(bin',1,numel(bin));
             % Zero-padding
             mult = 2;
+            % The length of the bitstream must be a multiple of 56
             r = mod(56,strlength(EmbeddedData.bitstream));
             while (r >= 56)
                 r = mod(56*mult,strlength(EmbeddedData.bitstream));
                 mult = mult + 1;
             end
             padding = repmat('0',1,r);
+            % Adding the necessary zeros at the end of the bitstream
             EmbeddedData.bitstream = strcat(EmbeddedData.bitstream,padding);
         end
         
         function Bitstream_to_Text(EmbeddedData)
+            % Conversion from binary to text, each byte to one character
             EmbeddedData.text = char(bin2dec(reshape(EmbeddedData.bitstream,8,[]).')).';
             EmbeddedData.size = strlength(EmbeddedData.text);
-            % Writing to the file
+            % Writing to the textfile
             fileID = fopen(strcat(EmbeddedData.name, EmbeddedData.type),'w');
             fprintf(fileID, EmbeddedData.text);
             fclose(fileID);
@@ -91,6 +94,7 @@ classdef EmbeddedObj < handle
                 % String to matrix conversion
                 spacedBitstream = strtrim(regexprep(EmbeddedData.bitstream(bit:bit+55), '.{1}', '$0 '));
                 lineBlock = str2num(spacedBitstream); %#ok<ST2NM>
+                % Reshape the line into a 7x8 matrix
                 EmbeddedData.blocks(:,:,fix(bit/56)+1) = reshape(lineBlock, 8, 7)';
             end
         end
@@ -101,6 +105,7 @@ classdef EmbeddedObj < handle
                 str = mat2str(EmbeddedData.blocks(:,:,block));
                 EmbeddedData.bitstream = strcat(EmbeddedData.bitstream, str);
             end
+            % Remove undesirables char (mat2str keeps matrix formatting characters in the conversion)
             EmbeddedData.bitstream = regexprep(EmbeddedData.bitstream,'[[,],;, ]','');
         end
                 
@@ -108,11 +113,13 @@ classdef EmbeddedObj < handle
         % Block 1 - How many useful blocks do we have ?
         %==================================================================
         function Count_to_block(EmbeddedData)
+            % Conversion from a decimal value to a 56-bit binary value that is saved as a 7x8 matrix
             lineBlock = str2num(strtrim(regexprep(dec2bin(EmbeddedData.countDecimal,56), '.{1}', '$0 '))); %#ok<ST2NM>
             EmbeddedData.countBlock = reshape(lineBlock,8,7)';
         end
         
         function Count_to_decimal(EmbeddedData)
+            % Conversion from a 56-bit binary value that is saved as a 7x8 matrix to a decimal value
             EmbeddedData.countDecimal = bin2dec(regexprep(mat2str(EmbeddedData.countBlock),'[[,],;, ]',''));
         end
         
@@ -120,12 +127,14 @@ classdef EmbeddedObj < handle
         % Block 2 - Among useful blocks how many conjugated blocks do we have ?
         %==================================================================
         function Count_Conjugation_to_block(EmbeddedData)
+            % Conversion from a decimal value to a 56-bit binary value that is saved as a 7x8 matrix
             lineBlock = str2num(strtrim(regexprep(dec2bin(EmbeddedData.countConjugationDecimal,24), '.{1}', '$0 '))); %#ok<ST2NM>
             EmbeddedData.countConjugationBlock = reshape(lineBlock,8,3)';
             EmbeddedData.countConjugationBlock = [zeros(4,8);EmbeddedData.countConjugationBlock];
         end
         
         function Count_Conjugation_to_decimal(EmbeddedData)
+            % Conversion from a 56-bit binary value that is saved as a 7x8 matrix to a decimal value
             EmbeddedData.countConjugationDecimal = bin2dec(regexprep(mat2str(EmbeddedData.countConjugationBlock),'[[,],;, ]',''));
         end
         
@@ -143,7 +152,7 @@ classdef EmbeddedObj < handle
         
         function Positions_Block_Tab_to_decimal(EmbeddedData)
             EmbeddedData.positionsDecimalTab = zeros(1,EmbeddedData.countConjugationDecimal);
-            
+            % Retrieval of the positions of the conjugated blocks in decimal form
             for position= 1:EmbeddedData.countConjugationDecimal
                 EmbeddedData.positionsDecimalTab(1,position) = bin2dec(regexprep(mat2str(EmbeddedData.positionsBlockTab(:,:,position)),'[[,],;, ]',''));
             end
@@ -181,6 +190,7 @@ classdef EmbeddedObj < handle
         % Conjugation of additional data
         %==================================================================
         function Conjugation_Additional_Data_1(EmbeddedData)
+            % Creation of the matrix necessary for the conjugation of additional data
             X = toeplitz(mod(1:8,2));
             Wc = bitxor(X(1:7,:),ones(7,8));
             
@@ -232,8 +242,9 @@ classdef EmbeddedObj < handle
             % Retrieve the two first blocks of our blockStream
             EmbeddedData.countBlock = EmbeddedData.blockStream(:,:,1);
             EmbeddedData.countConjugationBlock = EmbeddedData.blockStream(:,:,2);
-            % Conversion of data in decimal values
+            % Conjugation necessary of additional data 1 
             Conjugation_Additional_Data_1(EmbeddedData);
+            % Conversion of data in decimal values
             Count_to_decimal(EmbeddedData);
             Count_Conjugation_to_decimal(EmbeddedData);
             
@@ -263,6 +274,8 @@ classdef EmbeddedObj < handle
         % Steganalysis
         %==================================================================
         function Complexity_Histogram(EmbeddedData)
+            % This function displays an histogram that represent the complexity of the text message
+            % It displays the complexity for each block of text message
             figure;
             subplot(121);
             histogram(EmbeddedData.complexityTab, 'BinLimits', [0,1]);
