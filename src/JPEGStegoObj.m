@@ -1,6 +1,7 @@
 classdef JPEGStegoObj < handle
     
     properties (GetAccess=public)
+        % Global properties
         readData
         name
         width
@@ -31,7 +32,7 @@ classdef JPEGStegoObj < handle
         % Advanced BPCS
 %         thresholdBeta = 0;
 %         thresholdGamma = 0;
-        payloadCapacityAdvancedBPCS = 0;
+%         payloadCapacityAdvancedBPCS = 0;
         
         % LSB
         LSBAreas
@@ -48,7 +49,7 @@ classdef JPEGStegoObj < handle
         
     end
     
-    % Private methods
+    % Supposed to be private methods in a final implementation
     methods (Access=public)
         
         %==================================================================
@@ -59,7 +60,7 @@ classdef JPEGStegoObj < handle
             [~,name,ext] = fileparts(image);
             
             if (strcmp(ext,'.jpg'))
-                % Initialization of class fileds
+                % Initialization of class fields thanks to the jpeg_read above
                 JPEGImage.readData =         readData;
                 JPEGImage.name =             name;
                 JPEGImage.width =            readData.image_width;
@@ -83,6 +84,7 @@ classdef JPEGStegoObj < handle
         function DCT_Coeff_to_Blocks(JPEGImage)
             for channel= 1
                 % Y Channel only
+                % permute function necessary to have data in the 5 dimensions matrix in the following order: channel, blockRow, blockColumn, row, column.
                 JPEGImage.blocks(channel,:, :, :, :) = permute(reshape(JPEGImage.DCTcoefficients{channel}, 1, 8, JPEGImage.blockRows, 8, JPEGImage.blockColumns),[1 3 5 2 4]);
             end
         end
@@ -90,6 +92,7 @@ classdef JPEGStegoObj < handle
         function Blocks_to_DCT_Coeff(JPEGImage)
             for channel= 1
                 % Y Channel only
+                % permute function necessary to have data in the 5 dimensions matrix in the right order for reconstruction of the image.
                 JPEGImage.DCTcoefficients{channel} = reshape(permute(JPEGImage.blocks(channel,:,:,:,:),[1 4 2 5 3]),size(JPEGImage.DCTcoefficients{channel}));
             end
         end
@@ -110,6 +113,7 @@ classdef JPEGStegoObj < handle
             for bitplane=1:JPEGImage.nbBitplanes
                 for channel= 1
                     % Y Channel only
+                    % 6 dimensions matrix now: channel, blockRow, blockColumn, row, column, and bitplane.
                     JPEGImage.bitplanes(channel, :, :, :, :, bitplane) = bitget(JPEGImage.blocks(channel, :, :, :, :), JPEGImage.nbBitplanes-bitplane+1, JPEGImage.coeffType);
                 end
             end
@@ -139,30 +143,14 @@ classdef JPEGStegoObj < handle
             %  CGC = [g8 g7 g6 g5 g4 g3 g2 g1]
             %  g1 = b1
             %  g_i = b_i-1 xor b_i
-            
-            JPEGProcess = JPEGPRocessObj(JPEGImage.DCTcoefficients, JPEGImage.quantTables);
-            Decompressor_JPEG(JPEGProcess);
-            
-            JPEGProcess.R = bitxor(JPEGProcess.R,(bitor(bitshift(JPEGProcess.R,-1),bitand(2^7,JPEGProcess.R))));
-            JPEGProcess.G = bitxor(JPEGProcess.G,(bitor(bitshift(JPEGProcess.G,-1),bitand(2^7,JPEGProcess.G))));
-            JPEGProcess.B = bitxor(JPEGProcess.B,(bitor(bitshift(JPEGProcess.B,-1),bitand(2^7,JPEGProcess.B))));
-            
-            Compressor_JPEG(JPEGProcess);
-            JPEGImage.DCTcoefficients = JPEGProcess.DCTcoefficients;
-            
+           
+           
+            % Under development, this function does not work.
         end
         
         function CGC_to_PBC(JPEGImage)
             
-            JPEGProcess = JPEGPRocessObj(JPEGImage.DCTcoefficients, JPEGImage.quantTables);
-            Decompressor_JPEG(JPEGProcess);
-            
-            JPEGProcess.R = bitor(JPEGProcess.PBCr,bitxor(bitand(JPEGProcess.R,2.^(7-1)),bitshift(bitand(JPEGProcess.PBCr,2.^7),-1)));
-            JPEGProcess.G = bitor(JPEGProcess.PBCg,bitxor(bitand(JPEGProcess.G,2.^(7-1)),bitshift(bitand(JPEGProcess.PBCg,2.^7),-1)));
-            JPEGProcess.B = bitor(JPEGProcess.PBCb,bitxor(bitand(JPEGProcess.B,2.^(7-1)),bitshift(bitand(JPEGProcess.PBCr,2.^7),-1)));
-            
-            Compressor_JPEG(JPEGProcess);
-            JPEGImage.DCTcoefficients = JPEGProcess.DCTcoefficients;
+            % Under development, this function does not work.
             
         end
     end
@@ -196,6 +184,7 @@ classdef JPEGStegoObj < handle
             for channel= 1:1
                 for i= 1:JPEGImage.blockRows
                     for j= 1:JPEGImage.blockColumns
+                        % Read the bitplanes and as a consequence hide data into bitplanes numbers 16 to 11
                         for bitplane= JPEGImage.nbBitplanes:-1:11
                             complexity = Get_Complexity(squeeze(JPEGImage.bitplanes(channel, i, j, :, :, bitplane)));
                             JPEGImage.complexityTab = [JPEGImage.complexityTab complexity];
@@ -203,7 +192,8 @@ classdef JPEGStegoObj < handle
                             if (complexity >= JPEGImage.thresholdAlpha)
                                 JPEGImage.noiseAreas = [JPEGImage.noiseAreas [channel i j bitplane]'];
                                 count = count +1;
-                                if (count >= 1)
+                                % Limit to replace a maximum of 2 bitplanes per block
+                                if (count >= 2)
                                     count = 0;
                                     break
                                 end
@@ -238,46 +228,32 @@ classdef JPEGStegoObj < handle
         end
         
         %==================================================================
-        % Display an image in CGC
-        %==================================================================
-        function Display_CGC(ImageData, JPEGImage)
-            PBC_to_CGC(JPEGImage);
-            ImageData.coef_arrays = JPEGImage.DCTcoefficients;
-            jpeg_write(ImageData,strcat(JPEGImage.name,'-cgc.jpg'));
-        end
-        
-        %==================================================================
         % Embedding algorithms
         %==================================================================
         function Apply_BPCS(JPEGImage, SecretData)
             Init_Image(JPEGImage);
-%             test1 = max(abs(JPEGImage.DCTcoefficients{1}(:)));
             Get_Payload_Capacity_BPCS(JPEGImage);
             
-            %----------------------------------
             % Embedding process
-            %----------------------------------
             EmbeddedData = EmbeddedObj(SecretData);
             Data_to_Blockstream(EmbeddedData);
             
             for index= 1:size(EmbeddedData.blockStream,3)
                 area = JPEGImage.noiseAreas(:,index);
+                % Replace some bitplanes with the textfile
                 JPEGImage.bitplanes(area(1), area(2), area(3), 2:8, :, area(4)) = EmbeddedData.blockStream(:, :, index);
             end
             
             % Blocks rebuilding
             Bitplanes_to_Blocks(JPEGImage);
-%             test2 = JPEG_Image.DCTcoefficients{1};
             
             % DCT Coefficients rebuilding
             Blocks_to_DCT_Coeff(JPEGImage);
-%             test3 = JPEG_Image.DCTcoefficients{1};
-%             test4 = max(abs(JPEGImage.DCTcoefficients{1}(:)));
             
             % CGC to PBC conversion
 %             CGC_to_PBC(JPEG_Image);
             
-            % JPEG Writing
+            % JPEG New image generation
             JPEGImage.readData.coef_arrays = JPEGImage.DCTcoefficients;
             jpeg_write(JPEGImage.readData,strcat(JPEGImage.name,'-embedded-BPCS.jpg'));
             
@@ -293,14 +269,13 @@ classdef JPEGStegoObj < handle
 %         end
         
         function Apply_LSB(JPEGImage, SecretData)
-%             Init_Image(JPEGImage);
-%             Get_Payload_Capacity_LSB(JPEGImage);
+             Init_Image(JPEGImage);
+             Get_Payload_Capacity_LSB(JPEGImage);
             
-            %----------------------------------
             % Embedding process
-            %----------------------------------
             EmbeddedData = EmbeddedObj(SecretData);
             Data_to_Blockstream(EmbeddedData);
+            
             for index= 1:size(EmbeddedData.blockStream,3)
                 area = JPEGImage.LSBAreas(:,index);
                 JPEGImage.bitplanes(area(1), area(2), area(3), 2:8, :, area(4)) = EmbeddedData.blockStream(:, :, index);
@@ -312,7 +287,7 @@ classdef JPEGStegoObj < handle
             % DCT Coefficients rebuilding
             Blocks_to_DCT_Coeff(JPEGImage);
             
-            % JPEG Writing
+            % JPEG New image generation
             JPEGImage.readData.coef_arrays = JPEGImage.DCTcoefficients;
             jpeg_write(JPEGImage.readData,strcat(JPEGImage.name,'-embedded-LSB.jpg'));
             
@@ -331,10 +306,12 @@ classdef JPEGStegoObj < handle
             Init_Image(JPEGImage);
             Get_Payload_Capacity_BPCS(JPEGImage);
             
+            % Creation of an empty textfile
             EmbeddedData = EmbeddedObj('secret-message-BPCS.txt');
             
             for index= 1:size(JPEGImage.noiseAreas,2)
                 area = JPEGImage.noiseAreas(:,index);
+                 % Retrieving the bitplanes with the hidden textfile
                 EmbeddedData.blockStream(:,:,index) = JPEGImage.bitplanes(area(1),area(2),area(3),2:8,:,area(4));
             end
             
@@ -348,10 +325,12 @@ classdef JPEGStegoObj < handle
             Init_Image(JPEGImage);
             Get_Payload_Capacity_LSB(JPEGImage);
             
+            % Creation of an empty textfile
             EmbeddedData = EmbeddedObj('secret-message-LSB.txt');
             
             for index= 1:size(JPEGImage.LSBAreas,2)
                 area = JPEGImage.LSBAreas(:,index);
+                % Retrieving the bitplanes with the hidden textfile
                 EmbeddedData.blockStream(:,:,index) = JPEGImage.bitplanes(area(1),area(2),area(3),2:8,:,area(4));
             end
             
