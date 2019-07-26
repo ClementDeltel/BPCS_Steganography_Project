@@ -1,4 +1,5 @@
 function [hr,hc] = Run_frequency(bitplane)
+% Function necessary in the attempt to implement Run-length irregularity
 
 size2 = size(bitplane);
 rows = size2(1);
