@@ -1,5 +1,7 @@
 classdef JPEGProcessObj < handle
     
+    % Attempt to implement PBC to CGC conversion in the algorithm
+    
     properties (GetAccess=public)
         
         DCTcoefficients
@@ -16,7 +18,7 @@ classdef JPEGProcessObj < handle
         PBCb
     end
     
-    % ... methods
+    % Private methods
     methods (Access=private)
         %==================================================================
         % Constructor
